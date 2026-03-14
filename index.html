@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Learning Studio</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #f4f4f5;
+            --surface: #ffffff;
+            --text-main: #18181b;
+            --text-muted: #71717a;
+            --accent: #0ea5e9;
+            --accent-hover: #0284c7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --border: #e4e4e7;
+            
+            /* Colores Red */
+            --node-input: #94a3b8;
+            --node-hidden: #0ea5e9;
+            --node-output: #8b5cf6;
+            --node-cnn: #f43f5e;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .header-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header-title h1 { margin: 0; font-size: 2rem; color: #18181b; }
+        .header-title p { margin: 0.5rem 0 0; color: var(--text-muted); }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        h2 { margin: 0; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;}
+
+        /* Selectores y Controles */
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            background-color: var(--bg-color);
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+
+        .control-group label { 
+            display: flex; justify-content: space-between; 
+            font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted);
+        }
+
+        .val-badge {
+            background: var(--bg-color); padding: 0.1rem 0.6rem; border-radius: 12px;
+            color: var(--text-main); font-weight: 700; font-size: 0.8rem;
+        }
+
+        input[type="range"] { 
+            width: 100%; -webkit-appearance: none; background: transparent; margin-bottom: 1rem;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: var(--accent); cursor: pointer; margin-top: -6px;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: var(--border); border-radius: 2px;
+        }
+        input[type="range"]:disabled::-webkit-slider-thumb { background: var(--border); }
+
+        /* Panel Dinámico y Stats */
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+        }
+        .stat-box {
+            background: var(--bg-color); padding: 1rem; border-radius: 8px; text-align: center;
+        }
+        .stat-box span { display: block; font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+        .stat-box small { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;}
+        
+        .info-box {
+            background: #f0fdf4; border-left: 4px solid var(--success); padding: 1rem;
+            border-radius: 4px; font-size: 0.85rem; line-height: 1.5; color: #166534;
+        }
+        .info-box.warning { background: #fffbeb; border-color: var(--warning); color: #b45309; }
+
+        /* Canvas */
+        .canvas-container { position: relative; width: 100%; background: transparent; border-radius: 8px;}
+        canvas { width: 100%; height: 350px; display: block; }
+
+        /* Código y Botones */
+        .code-header {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;
+        }
+        .tabs { display: flex; gap: 0.5rem; }
+        .tab-btn {
+            padding: 0.5rem 1rem; border: none; background: transparent; color: var(--text-muted);
+            border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem;
+        }
+        .tab-btn.active { background: var(--text-main); color: white; }
+        
+        .action-btns { display: flex; gap: 0.5rem; }
+        .btn {
+            padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.8rem;
+            font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+            transition: 0.2s;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: var(--bg-color); }
+
+        pre {
+            background: #1e1e1e; color: #d4d4d4; padding: 1.2rem; border-radius: 8px;
+            overflow-x: auto; font-family: 'Menlo', monospace; font-size: 0.85rem; margin: 0;
+        }
+
+        /* Simulador Training */
+        .training-panel {
+            display: flex; align-items: center; gap: 1rem; padding: 1rem;
+            background: var(--bg-color); border-radius: 8px; margin-top: 1rem;
+        }
+        #lossCanvas { width: 150px; height: 50px; background: white; border-radius: 4px; border: 1px solid var(--border);}
+
+    </style>
+</head>
+<body>
+
+    <div class="header-title">
+        <h1>Deep Learning Studio</h1>
+        <p>Prototipado interactivo y exportación de arquitecturas neuronales</p>
+    </div>
+
+    <div class="dashboard">
+        <div class="panel">
+            <h2>1. Definición del Problema</h2>
+            
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Tipo de Arquitectura</label>
+            <select id="tipoRed">
+                <option value="mlp">Perceptrón Multicapa (Datos Tabulares)</option>
+                <option value="cnn">Red Convolucional (Imágenes / Visión)</option>
+            </select>
+
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Casos de Uso (Presets)</label>
+            <select id="presets">
+                <option value="custom">Configuración Manual</option>
+                <option value="mof">Predicción de Adsorción (Fisicoquímica)</option>
+                <option value="samu">Optimización de Tiempos de Respuesta (Logística)</option>
+                <option value="bioplastic">Control de Calidad de Bioplásticos (Visión)</option>
+            </select>
+
+            <h2 style="margin-top: 1rem;">2. Hiperparámetros</h2>
+            
+            <div class="control-group">
+                <label>Características de Entrada (Features) <span class="val-badge" id="val-entradas">5</span></label>
+                <input type="range" id="entradas" min="1" max="15" value="5">
+            </div>
+
+            <div class="control-group">
+                <label>Capas Ocultas (Profundidad) <span class="val-badge" id="val-capas">2</span></label>
+                <input type="range" id="capasOcultas" min="1" max="6" value="2">
+            </div>
+
+            <div class="control-group">
+                <label>Neuronas por Capa <span class="val-badge" id="val-neuronas">8</span></label>
+                <input type="range" id="neuronasPorCapa" min="2" max="32" value="8">
+            </div>
+
+            <div class="control-group">
+                <label>Clases de Salida <span class="val-badge" id="val-salidas">2</span></label>
+                <input type="range" id="salidas" min="1" max="10" value="2">
+            </div>
+        </div>
+
+        <div class="panel" style="gap: 0.5rem;">
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span id="paramCount">0</span>
+                    <small>Parámetros Entrenables</small>
+                </div>
+                <div id="infoPanel" class="info-box">
+                    <strong>Profesor IA:</strong> Cargando análisis de la red...
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="networkCanvas" width="900" height="350"></canvas>
+            </div>
+
+            <div class="training-panel">
+                <button class="btn btn-primary" onclick="simulateTraining()" id="btnTrain">▶ Simular Entrenamiento</button>
+                <canvas id="lossCanvas" width="300" height="100"></canvas>
+                <span id="epochText" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Esperando...</span>
+            </div>
+
+            <div class="code-header">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="setFramework('sklearn')" id="tab-sklearn">Scikit-Learn</button>
+                    <button class="tab-btn" onclick="setFramework('keras')">Keras (TensorFlow)</button>
+                    <button class="tab-btn" onclick="setFramework('pytorch')">PyTorch</button>
+                </div>
+                <div class="action-btns">
+                    <button class="btn btn-outline" onclick="copyCode()">📋 Copiar</button>
+                    <button class="btn btn-primary" onclick="downloadCode()">💾 Exportar .py</button>
+                </div>
+            </div>
+            <pre><code id="codeBlock"></code></pre>
+
+        </div>
+    </div>
+
+    <script>
+        // 1. ESTADO DE LA APLICACIÓN
+        let state = {
+            tipo: 'mlp', // mlp o cnn
+            entradas: 5,
+            capasOcultas: 2,
+            neuronasPorCapa: 8,
+            salidas: 2,
+            framework: 'sklearn'
+        };
+
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+        const codeBlock = document.getElementById('codeBlock');
+        let trainingAnim;
+
+        // 2. SISTEMA DE PRESETS (Casos de uso reales)
+        const presetsData = {
+            mof: {
+                tipo: 'mlp', entradas: 12, capasOcultas: 4, neuronasPorCapa: 16, salidas: 1,
+                desc: "Análisis fisicoquímico complejo. Muchas características de entrada (porosidad, temperatura, concentración) para predecir un valor continuo (Regresión) o binario (Adsorbe/No Adsorbe)."
+            },
+            samu: {
+                tipo: 'mlp', entradas: 6, capasOcultas: 1, neuronasPorCapa: 8, salidas: 3,
+                desc: "Optimización logística. Red rápida y superficial para clasificar el nivel de prioridad de despacho (Alto, Medio, Bajo) basándose en variables clave como ubicación, hora y recursos."
+            },
+            bioplastic: {
+                tipo: 'cnn', entradas: 1, capasOcultas: 2, neuronasPorCapa: 32, salidas: 2,
+                desc: "Visión por computadora. Usa capas convolucionales para analizar micrografías de polímeros y detectar defectos estructurales (Aprobado/Rechazado)."
+            }
+        };
+
+        document.getElementById('presets').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if(val !== 'custom') {
+                const p = presetsData[val];
+                document.getElementById('tipoRed').value = p.tipo;
+                document.getElementById('entradas').value = p.entradas;
+                document.getElementById('capasOcultas').value = p.capasOcultas;
+                document.getElementById('neuronasPorCapa').value = p.neuronasPorCapa;
+                document.getElementById('salidas').value = p.salidas;
+                updateAllFromUI();
+            }
+        });
+
+        document.getElementById('tipoRed').addEventListener('change', updateAllFromUI);
+        ['entradas', 'capasOcultas', 'neuronasPorCapa', 'salidas'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                document.getElementById('presets').value = 'custom';
+                updateAllFromUI();
+            });
+        });
+
+        function updateAllFromUI() {
+            state.tipo = document.getElementById('tipoRed').value;
+            state.entradas = parseInt(document.getElementById('entradas').value);
+            state.capasOcultas = parseInt(document.getElementById('capasOcultas').value);
+            state.neuronasPorCapa = parseInt(document.getElementById('neuronasPorCapa').value);
+            state.salidas = parseInt(document.getElementById('salidas').value);
+
+            // Restricciones de UI
+            const inputsSlider = document.getElementById('entradas');
+            const tabSklearn = document.getElementById('tab-sklearn');
+            
+            if(state.tipo === 'cnn') {
+                inputsSlider.disabled = true; // En CNN simulamos una imagen 28x28 fija visualmente
+                if(state.framework === 'sklearn') setFramework('keras'); // Sklearn no es bueno para CNNs
+                tabSklearn.style.display = 'none';
+            } else {
+                inputsSlider.disabled = false;
+                tabSklearn.style.display = 'block';
+            }
+
+            document.getElementById('val-entradas').innerText = state.tipo === 'cnn' ? 'IMG' : state.entradas;
+            document.getElementById('val-capas').innerText = state.capasOcultas;
+            document.getElementById('val-neuronas').innerText = state.neuronasPorCapa;
+            document.getElementById('val-salidas').innerText = state.salidas;
+
+            updateLogic();
+        }
+
+        function setFramework(fw) {
+            state.framework = fw;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            updateCode();
+        }
+
+        // 3. LÓGICA CORE: Matemáticas y Dibujo
+        function updateLogic() {
+            // Calcular parámetros
+            let params = 0;
+            if(state.tipo === 'mlp') {
+                let prev = state.entradas;
+                for(let i=0; i<state.capasOcultas; i++) {
+                    params += (prev * state.neuronasPorCapa) + state.neuronasPorCapa; // Pesos + Sesgos
+                    prev = state.neuronasPorCapa;
+                }
+                params += (prev * state.salidas) + state.salidas;
+            } else {
+                // Cálculo simplificado para la demo CNN (Conv2D -> Flatten -> Dense)
+                params = (3*3*1*16 + 16); // Conv1 aprox
+                if(state.capasOcultas > 1) params += (3*3*16*32 + 32); // Conv2 aprox
+                params += (14*14*32 * state.neuronasPorCapa) + state.neuronasPorCapa; // Dense
+                params += (state.neuronasPorCapa * state.salidas) + state.salidas;
+            }
+            
+            document.getElementById('paramCount').innerText = params.toLocaleString();
+
+            // Profesor IA (Explicación)
+            const info = document.getElementById('infoPanel');
+            const presetSel = document.getElementById('presets').value;
+            
+            if (presetSel !== 'custom') {
+                info.className = 'info-box';
+                info.innerHTML = `<strong>Contexto Aplicado:</strong> ${presetsData[presetSel].desc}`;
+            } else {
+                if(state.tipo === 'cnn') {
+                    info.className = 'info-box';
+                    info.innerHTML = `<strong>Visión por Computadora:</strong> La red extrae mapas de características espaciales antes de aplanar los datos (Flatten) y clasificarlos con la capa densa de ${state.neuronasPorCapa} neuronas.`;
+                } else if(state.capasOcultas > 3 || params > 1000) {
+                    info.className = 'info-box warning';
+                    info.innerHTML = `<strong>Atención (Deep Learning):</strong> Has creado un modelo profundo/complejo. Excelente para patrones no lineales, pero requerirá alta capacidad computacional y técnicas de regularización (Dropout) para evitar el sobreajuste (Overfitting).`;
+                } else {
+                    info.className = 'info-box';
+                    info.innerHTML = `<strong>Red Neuronal Estándar (Shallow):</strong> Arquitectura ligera y rápida. Ideal para descubrir relaciones base en datos tabulares estructurados sin consumir demasiados recursos.`;
+                }
+            }
+
+            drawNetwork();
+            updateCode();
+        }
+
+        function drawNetwork() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * 2; canvas.height = rect.height * 2;
+            ctx.scale(2, 2); ctx.clearRect(0, 0, rect.width, rect.height);
+
+            const paddingY = (numNodes) => rect.height / (numNodes + 1);
+            let cols = [];
+
+            if (state.tipo === 'mlp') {
+                const layers = [state.entradas];
+                for (let i = 0; i < state.capasOcultas; i++) layers.push(state.neuronasPorCapa);
+                layers.push(state.salidas);
+                
+                const paddingX = rect.width / (layers.length + 1);
+                
+                layers.forEach((nodes, i) => {
+                    let col = [];
+                    for(let n=0; n<nodes; n++) col.push({x: paddingX * (i+1), y: paddingY(nodes) * (n+1), type: i===0?'in':(i===layers.length-1?'out':'hid')});
+                    cols.push(col);
+                });
+            } else {
+                // Dibujo simbólico de CNN
+                let xOffset = rect.width * 0.15;
+                
+                // Dibujar bloque Conv (Simulado)
+                ctx.fillStyle = "rgba(244, 63, 94, 0.2)";
+                ctx.strokeStyle = "#f43f5e";
+                ctx.lineWidth = 2;
+                
+                for(let i=0; i<state.capasOcultas; i++) {
+                    ctx.fillRect(xOffset, rect.height/2 - 40, 40, 80);
+                    ctx.strokeRect(xOffset, rect.height/2 - 40, 40, 80);
+                    ctx.fillStyle = "#18181b";
+                    ctx.font = "10px Inter";
+                    ctx.fillText("Conv2D", xOffset, rect.height/2 + 55);
+                    xOffset += 80;
+                }
+
+                // Aplanado y Densas
+                let denseCol = [];
+                for(let n=0; n<state.neuronasPorCapa; n++) denseCol.push({x: xOffset + 40, y: paddingY(state.neuronasPorCapa) * (n+1), type: 'hid'});
+                cols.push(denseCol);
+                
+                let outCol = [];
+                for(let n=0; n<state.salidas; n++) outCol.push({x: rect.width * 0.85, y: paddingY(state.salidas) * (n+1), type: 'out'});
+                cols.push(outCol);
+            }
+
+            // Conectar Nodos (Bezier)
+            ctx.strokeStyle = "#e4e4e7"; ctx.lineWidth = 1;
+            for (let i = 0; i < cols.length - 1; i++) {
+                cols[i].forEach(a => {
+                    cols[i+1].forEach(b => {
+                        ctx.beginPath(); ctx.moveTo(a.x, a.y);
+                        ctx.bezierCurveTo(a.x + (b.x - a.x)/2, a.y, a.x + (b.x - a.x)/2, b.y, b.x, b.y);
+                        ctx.stroke();
+                    });
+                });
+            }
+
+            // Dibujar Nodos
+            cols.forEach(col => {
+                col.forEach(node => {
+                    ctx.beginPath(); ctx.arc(node.x, node.y, 6, 0, Math.PI*2);
+                    if(node.type === 'in') ctx.fillStyle = "#94a3b8";
+                    else if(node.type === 'hid') ctx.fillStyle = "#0ea5e9";
+                    else ctx.fillStyle = "#8b5cf6";
+                    ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+                });
+            });
+        }
+
+        // 4. GENERACIÓN DE CÓDIGO
+        function updateCode() {
+            let code = "";
+            let problemType = state.salidas > 2 ? 'Multiclase' : 'Binaria';
+            let lossFn = state.salidas > 2 ? "'sparse_categorical_crossentropy'" : "'binary_crossentropy'";
+            let outAct = state.salidas > 2 ? "'softmax'" : "'sigmoid'";
+            let outDim = state.salidas > 2 ? state.salidas : 1;
+
+            if (state.framework === 'sklearn') {
+                const hiddenTuple = Array(state.capasOcultas).fill(state.neuronasPorCapa).join(', ');
+                code = `# Scikit-Learn | Arquitectura: MLP | Tarea: Clasificación ${problemType}
+from sklearn.neural_network import MLPClassifier
+
+# El modelo instancia las conexiones automáticamente basado en los datos de entrada
+modelo = MLPClassifier(
+    hidden_layer_sizes=(${hiddenTuple}),
+    activation='relu',       # Función de activación no lineal
+    solver='adam',           # Optimizador estocástico eficiente
+    max_iter=1000,
+    random_state=42
+)
+
+# Entrenar el modelo (X_train debe tener forma [n_samples, ${state.entradas}])
+modelo.fit(X_train, y_train)`;
+            } 
+            else if (state.framework === 'keras') {
+                let layersCode = "";
+                if(state.tipo === 'cnn') {
+                    layersCode += `    Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(28, 28, 1)),\n    MaxPooling2D(pool_size=(2, 2)),\n`;
+                    for(let i=1; i<state.capasOcultas; i++) layersCode += `    Conv2D(64, (3, 3), activation='relu'),\n    MaxPooling2D((2, 2)),\n`;
+                    layersCode += `    Flatten(),\n`;
+                    layersCode += `    Dense(${state.neuronasPorCapa}, activation='relu'),\n`;
+                } else {
+                    layersCode += `    Dense(${state.neuronasPorCapa}, activation='relu', input_shape=(${state.entradas},)),\n`;
+                    for(let i=1; i<state.capasOcultas; i++) layersCode += `    Dense(${state.neuronasPorCapa}, activation='relu'),\n`;
+                }
+
+                code = `# Keras | Arquitectura: ${state.tipo.toUpperCase()} | Tarea: Clasificación ${problemType}
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense${state.tipo === 'cnn' ? ', Conv2D, MaxPooling2D, Flatten' : ''}
+
+modelo = Sequential([
+${layersCode}    Dense(${outDim}, activation=${outAct})
+])
+
+# Compilación y definición de la métrica de error
+modelo.compile(
+    optimizer='adam', 
+    loss=${lossFn}, 
+    metrics=['accuracy']
+)
+
+# Mostrar resumen de parámetros: ${document.getElementById('paramCount').innerText}
+modelo.summary()`;
+            }
+            else if (state.framework === 'pytorch') {
+                let pyDef = "", pyFwd = "", pyImports = "import torch\nimport torch.nn as nn\nimport torch.nn.functional as F";
+                
+                if(state.tipo === 'cnn') {
+                    pyDef += `        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3)\n`;
+                    if(state.capasOcultas > 1) pyDef += `        self.conv2 = nn.Conv2d(32, 64, 3)\n`;
+                    pyDef += `        # Nota: El 'in_features' del Linear depende del tamaño de imagen final tras Pooling\n`;
+                    pyDef += `        self.fc1 = nn.Linear(64 * 5 * 5, ${state.neuronasPorCapa})\n`;
+                    pyDef += `        self.fc2 = nn.Linear(${state.neuronasPorCapa}, ${outDim})`;
+                    
+                    pyFwd += `        x = F.relu(F.max_pool2d(self.conv1(x), 2))\n`;
+                    if(state.capasOcultas > 1) pyFwd += `        x = F.relu(F.max_pool2d(self.conv2(x), 2))\n`;
+                    pyFwd += `        x = torch.flatten(x, 1)\n`;
+                    pyFwd += `        x = F.relu(self.fc1(x))\n`;
+                    pyFwd += `        return self.fc2(x)`;
+                } else {
+                    let lastDim = state.entradas;
+                    for(let i=0; i<state.capasOcultas; i++) {
+                        pyDef += `        self.fc${i+1} = nn.Linear(${lastDim}, ${state.neuronasPorCapa})\n`;
+                        pyFwd += `        x = F.relu(self.fc${i+1}(x))\n`;
+                        lastDim = state.neuronasPorCapa;
+                    }
+                    pyDef += `        self.out = nn.Linear(${lastDim}, ${outDim})`;
+                    pyFwd += `        return self.out(x)`;
+                }
+
+                code = `# PyTorch | Arquitectura: ${state.tipo.toUpperCase()}
+${pyImports}
+
+class MiRed(nn.Module):
+    def __init__(self):
+        super(MiRed, self).__init__()
+${pyDef}
+
+    def forward(self, x):
+${pyFwd}
+
+modelo = MiRed()
+criterio = nn.${state.salidas > 2 ? 'CrossEntropyLoss()' : 'BCEWithLogitsLoss()'}
+optimizador = torch.optim.Adam(modelo.parameters(), lr=0.001)`;
+            }
+
+            codeBlock.innerText = code;
+        }
+
+        // 5. HERRAMIENTAS DE PRODUCTIVIDAD Y GAMIFICACIÓN
+        function copyCode() {
+            navigator.clipboard.writeText(codeBlock.innerText);
+            const btn = document.querySelector('.btn-outline');
+            btn.innerText = "✅ Copiado!";
+            setTimeout(() => btn.innerText = "📋 Copiar", 2000);
+        }
+
+        function downloadCode() {
+            const blob = new Blob([codeBlock.innerText], { type: 'text/x-python' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `arquitectura_${state.tipo}_${state.framework}.py`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function simulateTraining() {
+            if(trainingAnim) cancelAnimationFrame(trainingAnim);
+            const lCanvas = document.getElementById('lossCanvas');
+            const lCtx = lCanvas.getContext('2d');
+            const eText = document.getElementById('epochText');
+            document.getElementById('btnTrain').disabled = true;
+            
+            let epoch = 0;
+            const maxEpochs = 50;
+            let lossData = [];
+            
+            // Generar curva de pérdida (Decaimiento exponencial con un poco de ruido)
+            for(let i=0; i<=maxEpochs; i++) {
+                lossData.push(1.5 * Math.exp(-0.1 * i) + (Math.random() * 0.1));
+            }
+
+            function drawFrame() {
+                lCtx.clearRect(0, 0, lCanvas.width, lCanvas.height);
+                lCtx.beginPath();
+                lCtx.strokeStyle = "#0ea5e9";
+                lCtx.lineWidth = 2;
+                
+                for(let i=0; i<epoch; i++) {
+                    const x = (i / maxEpochs) * lCanvas.width;
+                    const y = lCanvas.height - (lossData[i] / 1.6 * lCanvas.height);
+                    if(i===0) lCtx.moveTo(x, y); else lCtx.lineTo(x, y);
+                }
+                lCtx.stroke();
+                
+                eText.innerText = `Epoch: ${Math.floor(epoch)}/${maxEpochs} | Loss: ${lossData[Math.floor(epoch)].toFixed(3)}`;
+
+                if(epoch < maxEpochs) {
+                    epoch += 0.5; // Velocidad de animación
+                    trainingAnim = requestAnimationFrame(drawFrame);
+                } else {
+                    document.getElementById('btnTrain').disabled = false;
+                    eText.innerHTML += " <span style='color:#10b981'>✅ Completado</span>";
+                }
+            }
+            drawFrame();
+        }
+
+        // Inicializar
+        updateAllFromUI();
+        window.addEventListener('resize', drawNetwork);
+    </script>
+</body>
+</html>
